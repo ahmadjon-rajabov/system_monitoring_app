@@ -1,0 +1,21 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  
+  /* Make the background dark globally to prevent white flashes */
+  background-color: #1a1a1a; 
+}
+
+body {
+  margin: 0;   /* Kill the white border */
+  padding: 0;
+  width: 100vw;
+  min-height: 100vh;
+  overflow-x: hidden; /* Prevent side-scrolling */
+}
+
+/* Make sure all elements calculate width correctly */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
