@@ -1,1 +1,3 @@
 .system_monitoring_app/
+postgres_data/
+.env
