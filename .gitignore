@@ -1,3 +1,5 @@
 .system_monitoring_app/
 postgres_data/
 .env
+__pycache__/
+*.pyc

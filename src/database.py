@@ -63,3 +63,35 @@ class DatabaseManager:
                 print(F"Save to DB Failed: {e}")
             finally:
                 connection.close()
+    
+    def get_recent_metrics(self, limit=10):
+        """
+        Retreives the last 'limit' entries from the DB
+        """
+        connection = self._get_connection()
+        data = []
+        if connection:
+            try:
+                with connection.cursor() as cursor:
+                    # Ordered by newest first
+                    cursor.execute("""
+                        SELECT timestamp, cpu_usage, memory_usage, disk_usage
+                        FROM system_metrics
+                        ORDER BY timestamp DESC
+                        LIMIT %s
+                    """, (limit,))
+                    data = cursor.fetchall()
+            except Exception as e:
+                print(f"Fetching recent metrics Failed: {e}")
+            finally:
+                connection.close()
+        
+        clean_data = []
+        for row in data:
+            clean_data.append({
+                "timestamp": row[0].isoformat(), # time to string 
+                "cpu": row[1],
+                "memory": row[2],
+                "disk": row[3]
+            })
+        return clean_data
