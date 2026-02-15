@@ -10,3 +10,8 @@ services:
       - "5432:5432"
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
+  
+  nginx_server:
+    image: nginx:alpine
+    ports:
+      - "8080-8090:80" # Range of ports so no conflicts

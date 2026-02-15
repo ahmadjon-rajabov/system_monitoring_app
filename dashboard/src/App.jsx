@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react' // Import useRef
+import { useState, useEffect, useRef } from 'react' 
 import axios from 'axios'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Activity, Cpu, Server, HardDrive, AlertTriangle, WifiOff, Clock } from 'lucide-react'
@@ -11,8 +11,7 @@ function App() {
   const [error, setError] = useState(null)
   const [systemStatus, setSystemStatus] = useState("offline") 
   
-  // ROBUST LOGIC: We track the "Last Known Timestamp" to detect stagnation
-  const lastTimestampRef = useRef(null)     // Keeps track of the last data we saw
+  const lastTimestampRef = useRef(null)     // Keeps track of the last data 
   const stuckCounterRef = useRef(0)         // Counts how many times data was the same
 
   const fetchData = async () => {
@@ -22,23 +21,22 @@ function App() {
         axios.get("http://127.0.0.1:8000/predict")
       ])
 
-      // 1. FRESHNESS CHECK (Timezone Proof)
+      // Timezone Proof
       const latestItem = historyRes.data.data[0] // API returns newest first
       
       if (latestItem) {
         const currentTimestamp = latestItem.timestamp
         
         if (currentTimestamp === lastTimestampRef.current) {
-          // Data hasn't changed since last fetch!
+          // Data hasn't changed since last fetch
           stuckCounterRef.current += 1
         } else {
-          // Data CHANGED! System is alive.
+          // Data changed system is alive.
           stuckCounterRef.current = 0
           lastTimestampRef.current = currentTimestamp
         }
 
-        // Logic: We fetch every 2 seconds. 
-        // If counter > 5, it means data hasn't changed for 10+ seconds.
+        // Data hasn't changed for 10+ seconds.
         if (stuckCounterRef.current > 5) {
            setSystemStatus("warning")
         } else {
@@ -75,9 +73,9 @@ function App() {
   }, [])
 
   const getStatusColor = () => {
-    if (systemStatus === "online") return "#4ade80" // Green
-    if (systemStatus === "warning") return "#facc15" // Yellow
-    return "#ef4444" // Red
+    if (systemStatus === "online") return "#4ade80" 
+    if (systemStatus === "warning") return "#facc15" 
+    return "#ef4444" 
   }
 
   return (
