@@ -9,32 +9,32 @@ class AutoScaler:
         self.cooldown_end = 0 
 
         # Rules
-        self.HIGH_LOAD_THRESHOLD = 50.0 # CPU > 50% Scale UP
-        self.LOW_LOAD_THRESHOLD = 10.0  # CPU < 10% Scale DOWN
-        self.COOLDOWN_SECONDS = 30      # Wait for 30s between actions
+        self.HIGH_LOAD_THRESHOLD = 2.0  # 2 MB/s 
+        self.LOW_LOAD_THRESHOLD = 0.1   # 100 KB/s
+        self.COOLDOWN_SECONDS = 30  # Wait for 30s between actions
         
     def decide(self):
         metrics = self.db.get_recent_metrics(limit=1)
         if not metrics:
-            print("Waiting for data...")
+            print("Can't decide No metrics")
             return
         
-        current_cpu = metrics[0]['cpu']
+        current_net = metrics[0]['network']
         current_time = time.time()
 
-        if current_time < self.cooldown_end:
-            remaining = int(self.cooldown_end - current_time)
-            print(f"Cooldown active ({remaining}s reamining)...")
-            return
+        # if current_time < self.cooldown_end:
+        #     remaining = int(self.cooldown_end - current_time)
+        #     print(f"Cooldown active ({remaining}s reamining)...")
+        #     return
         
-        print(f"Analyzing: CPU is {current_cpu}")
+        print(f"Traffic: {current_net}")
 
-        if current_cpu > self.HIGH_LOAD_THRESHOLD:
-            print(f"High Load Detected! ({current_cpu}% > {self.HIGH_LOAD_THRESHOLD}%)")
+        if current_net > self.HIGH_LOAD_THRESHOLD:
+            print(f"High Traffic! ({current_net}%)")
             self.actuator.scale_up()
             self.cooldown_end = time.time() + self.COOLDOWN_SECONDS
-        elif current_cpu < self.LOW_LOAD_THRESHOLD:
-            print(f"Low Load Detected! ({current_cpu}% < {self.HIGH_LOAD_THRESHOLD}%)")
+        elif current_net < self.LOW_LOAD_THRESHOLD:
+            print(f"Low Traffic! ({current_net}%)")
             self.actuator.scale_down()
             self.cooldown_end = time.time() + self.COOLDOWN_SECONDS
         

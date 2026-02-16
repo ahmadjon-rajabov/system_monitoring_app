@@ -34,29 +34,36 @@ class DatabaseManager:
         connection = self._get_connection()
         if connection:
             with connection.cursor() as cursor:
-                # added disk_usage to the schema here
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS system_metrics(
                         id SERIAL PRIMARY KEY,
                         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         cpu_usage REAL,
                         memory_usage REAL,
-                        disk_usage REAL
+                        disk_usage REAL,
+                        network_mbps REAL
                     );
                 """)
+                try:
+                    cursor.execute("ALTER TABLE system_metrics ADD COLUMN network_mbps REAL;")
+                except:
+                    connection.rollback() # Column already exists
+                else:
+                    connection.commit()
+
                 connection.commit()
             connection.close()
-            print("!!! Database Table Ready !!!")
+            print("!!! Database Schema Ready !!!")
     
-    def save_metric(self, cpu, memory, disk):
+    def save_metric(self, cpu, memory, disk, network):
         connection = self._get_connection()
         if connection:
             try:
                 with connection.cursor() as cursor:
                     cursor.execute(
-                        "INSERT INTO system_metrics (cpu_usage, memory_usage, disk_usage)" \
-                        "VALUES (%s, %s, %s)",
-                        (cpu, memory, disk)
+                        "INSERT INTO system_metrics (cpu_usage, memory_usage, disk_usage, network_mbps)" \
+                        "VALUES (%s, %s, %s, %s)",
+                        (cpu, memory, disk, network)
                     )
                     connection.commit()
             except Exception as e:
@@ -69,29 +76,31 @@ class DatabaseManager:
         Retreives the last 'limit' entries from the DB
         """
         connection = self._get_connection()
-        data = []
+        clean_data = []
+
         if connection:
             try:
                 with connection.cursor() as cursor:
                     # Ordered by newest first
                     cursor.execute("""
-                        SELECT timestamp, cpu_usage, memory_usage, disk_usage
+                        SELECT timestamp, cpu_usage, memory_usage, disk_usage, network_mbps
                         FROM system_metrics
                         ORDER BY timestamp DESC
                         LIMIT %s
                     """, (limit,))
                     data = cursor.fetchall()
+
+                    for row in data:
+                        clean_data.append({
+                            "timestamp": row[0].isoformat(),
+                            "cpu": row[1],
+                            "memory": row[2],
+                            "disk": row[3],
+                            "network": row[4]
+                        })
             except Exception as e:
                 print(f"Fetching recent metrics Failed: {e}")
             finally:
                 connection.close()
         
-        clean_data = []
-        for row in data:
-            clean_data.append({
-                "timestamp": row[0].isoformat(), # time to string 
-                "cpu": row[1],
-                "memory": row[2],
-                "disk": row[3]
-            })
         return clean_data
