@@ -4,25 +4,33 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { Activity, Cpu, Server, HardDrive, AlertTriangle, WifiOff, Clock } from 'lucide-react'
 
 function App() {
+  // API URL constant
+  const API_URL = import.meta.env.VITE_API_URL || "/api"
+
   const [metrics, setMetrics] = useState([])
   const [prediction, setPrediction] = useState(null)
   
+  const [sysInfo, setSysInfo] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [systemStatus, setSystemStatus] = useState("offline") 
   
-  const lastTimestampRef = useRef(null)     // Keeps track of the last data 
-  const stuckCounterRef = useRef(0)         // Counts how many times data was the same
+  const lastTimestampRef = useRef(null)     
+  const stuckCounterRef = useRef(0)         
 
   const fetchData = async () => {
     try {
-      const [historyRes, predictRes] = await Promise.all([
-        axios.get("http://127.0.0.1:8000/metrics?limit=30"),
-        axios.get("http://127.0.0.1:8000/predict")
+      // FIX 3: Use API_URL consistently
+      const [historyRes, predictRes, systemRes] = await Promise.all([
+        axios.get(`${API_URL}/metrics?limit=30`),
+        axios.get(`${API_URL}/predict`),
+        axios.get(`${API_URL}/system`) 
       ])
 
-      // Timezone Proof
-      const latestItem = historyRes.data.data[0] // API returns newest first
+      // Set the system info state
+      setSysInfo(systemRes.data)
+
+      const latestItem = historyRes.data.data[0] 
       
       if (latestItem) {
         const currentTimestamp = latestItem.timestamp
@@ -85,9 +93,8 @@ function App() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2rem", borderBottom: "1px solid #333", paddingBottom: "1rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <Activity size={32} color={getStatusColor()} />
-          <h1 style={{ margin: 0, fontSize: "1.8rem", letterSpacing: "-1px" }}>Eco-Pulse <span style={{color: "#666"}}>Command Center</span></h1>
+          <h1 style={{ margin: 0, fontSize: "1.8rem", letterSpacing: "-1px" }}>System Monitoring <span style={{color: "#666"}}>Command Center</span></h1>
         </div>
-        
         {/* DYNAMIC STATUS BADGE */}
         <div style={{ display: "flex", gap: "1rem" }}>
              <span style={{ 
@@ -132,6 +139,34 @@ function App() {
               The database has not received new data for over 10 seconds. Is <b>monitor.py</b> running?
             </p>
           </div>
+        </div>
+      )}
+
+      {/* SYSTEM INFO BAR */}
+      {sysInfo && (
+        <div style={{
+          display: "flex", flexWrap: "wrap", gap: "2rem", marginBottom: "2rem", padding: "1rem", backgroundColor: "#262626",
+          borderRadius: "8px", fontSize: "0.85rem", color: "#a3a3a3", border: "1px solid #333"
+        }}>
+          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            🖥️ <b>Host:</b> <span style={{color: "#fff"}}>{sysInfo.hostname}</span>
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            📟 <b>OS Arch:</b> <span style={{color: "#fff"}}>{sysInfo.cpu_arch}</span>
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            ⚙️ <b>OS:</b> <span style={{color: "#fff"}}>{sysInfo.os}</span>
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            🧠 <b>CPU:</b> <span style={{color: "#fff"}}>{sysInfo.cpu_cores} Cores</span>
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            💾 <b>RAM:</b> <span style={{color: "#fff"}}>{sysInfo.ram_total} GB</span>
+          </span>
+          {/* NEW DISK STATS */}
+          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            💿 <b>Storage:</b> <span style={{color: "#fff"}}>{sysInfo.disk_used} GB </span> / {sysInfo.disk_total} GB
+          </span>
         </div>
       )}
 

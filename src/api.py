@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.database import DatabaseManager
 from src.predictor import Predictor
+import platform, psutil, os
 
 app = FastAPI()
 app.add_middleware(
@@ -40,4 +41,35 @@ def get_prediction():
     return {
         "status": status,
         "predicted_cpu_load": cpu_prediction
+    }
+
+@app.get("/system")
+def get_system_info():
+    """
+    Returns static info about host machine
+    """
+    system_os = platform.system()
+    disk_path = '/'
+
+    if system_os == 'Windows':
+        disk_path = 'C:\\'
+    elif system_os == 'Darwin':
+        if os.path.exists('/System/Volumes/Data'):
+            disk_path = '/System/Volumes/Data'
+
+    try:
+        disk_info = psutil.disk_usage(disk_path)
+    except Exception as e:
+        print(f"Disk check failed for {disk_path}, falling back to current directory")
+        disk_info = psutil.disk_usage('.')
+
+    return{
+        "hostname": platform.node(),
+        "os": f"{platform.system()} {platform.release()}",
+        "cpu_arch": platform.machine(),
+        "cpu_cores": psutil.cpu_count(logical=True),
+        "ram_total": round(psutil.virtual_memory().total / (1024 ** 3), 2), # Bytes to GB
+        "disk_total": round(disk_info.total / (1024 ** 3), 2),
+        "disk_used": round(disk_info.used / (1024 ** 3), 2),
+        "python_version": platform.python_version()
     }
