@@ -178,7 +178,10 @@ function App() {
             <Card title="CPU Load" value={`${metrics[metrics.length - 1]?.cpu}%`} icon={<Cpu size={24} />} color="#f87171" />
             <Card title="Memory Usage" value={`${metrics[metrics.length - 1]?.memory}%`} icon={<Server size={24} />} color="#60a5fa" />
             <Card title="Disk Usage" value={`${metrics[metrics.length - 1]?.disk}%`} icon={<HardDrive size={24} />} color="#4ade80" />
-            <Card title="AI Prediction" value={`${prediction?.predicted_cpu_load}%`} subtext={prediction?.status} icon={<Activity size={24} />} color="#c084fc" isPrediction={true} />
+
+            {/* AI CARDS */}
+            <PredictionCard title="CPU Load" data={prediction?.cpu} icon={<Cpu size={24} />} color="#c084fc" />
+            <PredictionCard title="Network Traffic" data={prediction?.network} icon={<Activity size={24} />} color="#facc15" />
           </div>
 
           <div style={{ backgroundColor: "#262626", padding: "1.5rem", borderRadius: "12px", border: "1px solid #333", height: "500px" }}>
@@ -193,6 +196,7 @@ function App() {
                 <Line type="monotone" dataKey="cpu" stroke="#f87171" strokeWidth={3} dot={false} isAnimationActive={false} />
                 <Line type="monotone" dataKey="memory" stroke="#60a5fa" strokeWidth={3} dot={false} isAnimationActive={false} />
                 <Line type="monotone" dataKey="disk" stroke="#4ade80" strokeWidth={3} dot={false} isAnimationActive={false} />
+                <Line type="monotone" dataKey="network" stroke="#facc15" strokeWidth={3} name="Network (MB/s)" dot={false} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -212,6 +216,40 @@ function Card({ title, value, icon, color, subtext, isPrediction }) {
       </div>
       <span style={{ fontSize: "2.5rem", fontWeight: "bold", color: "#fff" }}>{value}</span>
       {subtext && <div style={{ marginTop: "8px", fontSize: "0.85rem", color: isPrediction ? "#c084fc" : "#737373" }}>{subtext}</div>}
+    </div>
+  )
+}
+
+function PredictionCard({ title, data, icon, color }) {
+  if (!data) return (
+    <div style={{ backgroundColor: "#262626", padding: "1.5rem", borderRadius: "12px", border: "1px solid #333", opacity: 0.5 }}>
+      <h4>{title}</h4>
+      <p>Gathering Data...</p>
+    </div>
+  )
+
+  return (
+    <div style={{ backgroundColor: "#262626", padding: "1.5rem", borderRadius: "12px", border: "1px solid #333", borderTop: `4px solid ${color}` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "15px" }}>
+        <h4 style={{ margin: 0, color: "#a3a3a3" }}>{title} Forecast</h4>
+        <div style={{ color: color }}>{icon}</div>
+      </div>
+      
+      {/* Model Comparison Table */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <ModelRow name="Linear (Base)" value={data.Linear} color="#737373" />
+        <ModelRow name="Gradient Boost" value={data.GradientBoosting} color={color} isPrimary />
+        <ModelRow name="Random Forest" value={data.RandomForest} color="#737373" />
+      </div>
+    </div>
+  )
+}
+
+function ModelRow({ name, value, color, isPrimary }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: isPrimary ? "1rem" : "0.85rem" }}>
+      <span style={{ color: isPrimary ? "#fff" : "#737373", fontWeight: isPrimary ? "bold" : "normal" }}>{name}</span>
+      <span style={{ color: color, fontWeight: "bold" }}>{value}{isPrimary && "%"}</span>
     </div>
   )
 }

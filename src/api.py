@@ -34,13 +34,17 @@ def get_metrics(limit: int = 10):
 @app.get("/predict")
 def get_prediction():
     """
-    Asks the AI to forecast the next CPU load
+    Asks the AI to forecast the next CPU and Network load
     """
-    cpu_prediction, status = predictor.predict_next_minute()
+    predictions, status = predictor.predict_next_minute()
+
+    if predictions is None:
+        return {"status": status, "cpu": None, "network": None}
 
     return {
         "status": status,
-        "predicted_cpu_load": cpu_prediction
+        "cpu": predictions['cpu'],
+        "network": predictions['network']
     }
 
 @app.get("/system")
