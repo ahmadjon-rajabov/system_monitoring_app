@@ -44,13 +44,12 @@ class DatabaseManager:
                         network_mbps REAL
                     );
                 """)
+                connection.commit()
                 try:
                     cursor.execute("ALTER TABLE system_metrics ADD COLUMN network_mbps REAL;")
                 except:
                     connection.rollback() # Column already exists
-                else:
-                    connection.commit()
-
+                
                 connection.commit()
             connection.close()
             print("!!! Database Schema Ready !!!")
