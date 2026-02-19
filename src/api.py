@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel  # For POST request body
 from src.database import DatabaseManager
 from src.predictor import Predictor
+from src.rag_agent import RagAgent
 import platform, psutil, os
 
 app = FastAPI()
@@ -15,6 +17,19 @@ app.add_middleware(
 
 db = DatabaseManager()
 predictor = Predictor()
+rag_agent = RagAgent()
+
+# Data shape for the chat request
+class ChatReqeust(BaseModel):
+    question: str
+
+@app.post("/chat")
+def chat_ai(request: ChatReqeust):
+    """
+    Sends user question + DB context to Gemini
+    """
+    answer = rag_agent.ask(request.question)
+    return {"answer": answer}
 
 @app.get("/")
 def root():

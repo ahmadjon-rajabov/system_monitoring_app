@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Activity, Cpu, Server, HardDrive, AlertTriangle, WifiOff, Clock } from 'lucide-react'
+import ChatWidget from './ChatWidget'
 
 function App() {
   // API URL constant
@@ -173,7 +174,7 @@ function App() {
       {/* DASHBOARD CONTENT */}
       {(systemStatus === "online" || systemStatus === "warning") && !loading && (
         <div style={{ display: "flex", flexDirection: "column", gap: "2rem", opacity: systemStatus === "warning" ? 0.5 : 1 }}>
-          
+          {/* METRIC CARDS */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem" }}>
             <Card title="CPU Load" value={`${metrics[metrics.length - 1]?.cpu}%`} icon={<Cpu size={24} />} color="#f87171" />
             <Card title="Memory Usage" value={`${metrics[metrics.length - 1]?.memory}%`} icon={<Server size={24} />} color="#60a5fa" />
@@ -184,23 +185,33 @@ function App() {
             <PredictionCard title="Network Traffic" data={prediction?.network} icon={<Activity size={24} />} color="#facc15" />
           </div>
 
-          <div style={{ backgroundColor: "#262626", padding: "1.5rem", borderRadius: "12px", border: "1px solid #333", height: "500px" }}>
-            <h3 style={{ marginTop: 0, marginBottom: "1.5rem", color: "#d4d4d4" }}>Live Resource Monitor</h3>
-            <ResponsiveContainer width="100%" height="90%">
-              <LineChart data={metrics}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#404040" vertical={false} />
-                <XAxis dataKey="time" stroke="#737373" tick={{fontSize: 12}} />
-                <YAxis stroke="#737373" tick={{fontSize: 12}} domain={[0, 100]} />
-                <Tooltip contentStyle={{ backgroundColor: "#171717", border: "1px solid #333" }} />
-                <Legend />
-                <Line type="monotone" dataKey="cpu" stroke="#f87171" strokeWidth={3} dot={false} isAnimationActive={false} />
-                <Line type="monotone" dataKey="memory" stroke="#60a5fa" strokeWidth={3} dot={false} isAnimationActive={false} />
-                <Line type="monotone" dataKey="disk" stroke="#4ade80" strokeWidth={3} dot={false} isAnimationActive={false} />
-                <Line type="monotone" dataKey="network" stroke="#facc15" strokeWidth={3} name="Network (MB/s)" dot={false} isAnimationActive={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          {/* BOTTOM ROW: SPLIT VIEW (Chart Left, Chat Right) */}
+          <div style={{ display: "grid", gridTemplateColumns: "3fr 1fr", gap: "1.5rem", height: "600px" }}>
+            {/* LEFT: CHART */}
+            <div style={{ backgroundColor: "#262626", padding: "1.5rem", borderRadius: "12px", border: "1px solid #333", height: "100%", display: "flex", flexDirection: "column" }}>
+              <h3 style={{ marginTop: 0, marginBottom: "1.5rem", color: "#d4d4d4" }}>Live Resource Monitor</h3>
+              
+              {/* Flex-grow ensures chart fills the remaining height */}
+              <div style={{ flex: 1, width: "100%", minHeight: 0 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={metrics}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#404040" vertical={false} />
+                    <XAxis dataKey="time" stroke="#737373" tick={{fontSize: 12}} />
+                    <YAxis stroke="#737373" tick={{fontSize: 12}} domain={[0, 100]} />
+                    <Tooltip contentStyle={{ backgroundColor: "#171717", border: "1px solid #333" }} />
+                    <Legend wrapperStyle={{ paddingTop: "10px" }}/>
+                    <Line type="monotone" dataKey="cpu" stroke="#f87171" strokeWidth={3} dot={false} isAnimationActive={false} />
+                    <Line type="monotone" dataKey="memory" stroke="#60a5fa" strokeWidth={3} dot={false} isAnimationActive={false} />
+                    <Line type="monotone" dataKey="disk" stroke="#4ade80" strokeWidth={3} dot={false} isAnimationActive={false} />
+                    <Line type="monotone" dataKey="network" stroke="#facc15" strokeWidth={3} name="Network (MB/s)" dot={false} isAnimationActive={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
 
+            {/* RIGHT: CHAT */}
+            <ChatWidget />
+          </div>
         </div>
       )}
     </div>

@@ -12,7 +12,7 @@ class DatabaseManager:
         self.connection = None
         self._initialize_tables()
     
-    def _get_connection(self):
+    def get_connection(self):
         """        
         Private method: Creates a new connection
         """
@@ -31,7 +31,7 @@ class DatabaseManager:
         """
         Private method: Set up the table if missing
         """
-        connection = self._get_connection()
+        connection = self.get_connection()
         if connection:
             with connection.cursor() as cursor:
                 cursor.execute("""
@@ -55,7 +55,7 @@ class DatabaseManager:
             print("!!! Database Schema Ready !!!")
     
     def save_metric(self, cpu, memory, disk, network):
-        connection = self._get_connection()
+        connection = self.get_connection()
         if connection:
             try:
                 with connection.cursor() as cursor:
@@ -74,7 +74,7 @@ class DatabaseManager:
         """
         Retreives the last 'limit' entries from the DB
         """
-        connection = self._get_connection()
+        connection = self.get_connection()
         clean_data = []
 
         if connection:
@@ -103,3 +103,35 @@ class DatabaseManager:
                 connection.close()
         
         return clean_data
+    
+    def get_24h_summary(self):
+        """
+        Calculatees Highs, Lows, and Averages for the last 24 hours
+        """
+        connection = self.get_connection()
+        summary = {}
+
+        if connection:
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT MIN(cpu_usage), MAX(cpu_usage), AVG(cpu_usage),
+                        SELECT MIN(memory_usage), MAX(cpu_usmemory_usageage), AVG(memory_usage),
+                            MIN(network_mbps), MAX(network_mbps), AVG(network_mbps),
+                            COUNT(*)
+                        FROM system_metrics
+                        WHERE timestamp > NOW() - INTERVAL '24 hours'
+                    """)
+                    row = cursor.fetchone()
+                    if row and row[9] > 0: # Is there data
+                        summary = {
+                            "cpu_min": row[0], "cpu_max": row[1], "cpu_avg": round(row[2], 2),
+                            "mem_min": row[3], "mem_max": row[4], "mem_avg": round(row[5], 2),
+                            "net_min": row[6], "net_max": row[7], "net_avg": round(row[8], 2),
+                            "data_points": row[9]
+                        }
+            except Exception as e:
+                print(f"Summary 24h fetch failed: {e}")
+            finally:
+                connection.close()
+        return summary
