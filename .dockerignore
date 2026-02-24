@@ -1,0 +1,10 @@
+postgres_data/
+._*
+.DS_Store
+.git/
+__pycache__/
+*.pyc
+.env
+venv/
+.system_monitoring_app/
+dashboard/node_modules/

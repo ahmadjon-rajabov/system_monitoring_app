@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autoscaler-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: autoscaler
+  template:
+    metadata:
+      labels:
+        component: autoscaler
+    spec:
+      serviceAccountName: server-scaler-sa 
+      containers:
+        - name: autoscaler
+          image: system-monitor-backend:v1
+          imagePullPolicy: Never  # Use local image, do not pull from registry
+          command: ["python", "-m", "src.autoscaler"]  # Override default command to run the autoscaler script
+          env:
+            - name: POSTGRES_HOST
+              value: "postgres-service"
+            - name: ORCHESTRATOR
+              value: "kubernetes"
+          envFrom:
+            - secretRef:
+                name: system-monitor-secrets

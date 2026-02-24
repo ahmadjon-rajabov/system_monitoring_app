@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: server
+  template:
+    metadata:
+      labels:
+        component: server
+    spec:
+      serviceAccountName: server-scaler-sa
+      containers:
+        - name: server
+          image: system-monitor-backend:v1
+          imagePullPolicy: Never # Use local image, do not pull from registry
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: system-monitor-secrets
+          env:
+            - name: POSTGRES_HOST
+              value: "postgres-service" 
+            - name: ORCHESTRATOR
+              value: "kubernetes"

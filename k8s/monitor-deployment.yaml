@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitor-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: monitor
+  template:
+    metadata:
+      labels:
+        component: monitor
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: monitor
+          image: system-monitor-backend:v1
+          imagePullPolicy: Never
+          command: ["python", "-m", "src.monitor"]  # Override default command to run the monitor script
+          env:
+            - name: POSTGRES_HOST
+              value: "postgres-service"
+          envFrom:
+            - secretRef:
+                name: system-monitor-secrets

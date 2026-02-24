@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: postgres
+  template:
+    metadata:
+      labels:
+        component: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: system-monitor-secrets
+          volumeMounts: # Connect Hard Divre to Container
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+      volumes:  # Define the volume using the PVC 
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-pvc

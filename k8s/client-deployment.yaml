@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: client
+  template:
+    metadata:
+      labels:
+        component: client
+    spec:
+      containers:
+        - name: client
+          image: system-monitor-frontend:v1
+          imagePullPolicy: Never # Use local image, do not pull from registry
+          ports:
+            - containerPort: 5173
+          env:
+            - name: VITE_API_URL
+              value: "/api"
+            - name: BACKEND_URL
+              value: "http://server-service:8000" # K8s service name to access backend from frontend

@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 class DatabaseManager:
     def __init__(self):
         load_dotenv()
-        self.host = "localhost"
+        self.host = os.getenv("POSTGRES_HOST", "localhost")
         self.name = os.getenv("POSTGRES_DB")
         self.user = os.getenv("POSTGRES_USER")
         self.password = os.getenv("POSTGRES_PASSWORD")
@@ -116,7 +116,7 @@ class DatabaseManager:
                 with connection.cursor() as cursor:
                     cursor.execute("""
                         SELECT MIN(cpu_usage), MAX(cpu_usage), AVG(cpu_usage),
-                        SELECT MIN(memory_usage), MAX(cpu_usmemory_usageage), AVG(memory_usage),
+                            MIN(memory_usage), MAX(memory_usage), AVG(memory_usage),
                             MIN(network_mbps), MAX(network_mbps), AVG(network_mbps),
                             COUNT(*)
                         FROM system_metrics

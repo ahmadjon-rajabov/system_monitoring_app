@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: client-service
+spec:
+  type: LoadBalancer # Exposes to the outside world
+  selector:
+    component: client # send traffic to pods with this label
+  ports:
+    - port: 80  # External (Browser) port
+      targetPort: 5173 # Container (React) port in the pod

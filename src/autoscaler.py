@@ -20,8 +20,8 @@ class AutoScaler:
             return
         
         current_net = metrics[0]['network']
-        current_time = time.time()
-
+        
+        # current_time = time.time()
         # if current_time < self.cooldown_end:
         #     remaining = int(self.cooldown_end - current_time)
         #     print(f"Cooldown active ({remaining}s reamining)...")
@@ -49,4 +49,4 @@ class AutoScaler:
 
 if __name__ == "__main__":
     bot = AutoScaler()
-    bot.start()
+    bot.start()     

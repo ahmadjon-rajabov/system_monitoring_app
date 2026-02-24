@@ -132,10 +132,10 @@ class RagAgent:
 
             if "[ACTION: SCALE_UP]" in reply:
                 self.actuator.scale_up()
-                return "**Command Executed:** I have successfully scaled UP the Nginx cluster"
+                return "**Command Executed:** I have successfully scaled UP the Nginx/Client server"
             elif "ACTION: SCALE_DOWN" in reply:
                 self.actuator.scale_down()
-                return "**Comadn Executed:** I have successfully scaled DOWN the Nginx cluster"
+                return "**Command Executed:** I have successfully scaled DOWN the Nginx/Client server"
             
             return reply
         except Exception as e:
