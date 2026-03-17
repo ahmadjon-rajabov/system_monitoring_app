@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react' 
 import axios from 'axios'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { Activity, Cpu, Server, HardDrive, AlertTriangle, WifiOff, Clock } from 'lucide-react'
+import { Activity, Cpu, Server, HardDrive, AlertTriangle, WifiOff, Clock, ToggleLeft, ToggleRight } from 'lucide-react'
 import ChatWidget from './ChatWidget'
 
 function App() {
-  // API URL constant
   const API_URL = import.meta.env.VITE_API_URL || "/api"
 
+  const [mode, setMode] = useState("auto")
   const [metrics, setMetrics] = useState([])
   const [prediction, setPrediction] = useState(null)
   
@@ -21,15 +21,16 @@ function App() {
 
   const fetchData = async () => {
     try {
-      // FIX 3: Use API_URL consistently
-      const [historyRes, predictRes, systemRes] = await Promise.all([
+      const [historyRes, predictRes, systemRes, modeRes] = await Promise.all([
         axios.get(`${API_URL}/metrics?limit=30`),
         axios.get(`${API_URL}/predict`),
-        axios.get(`${API_URL}/system`) 
+        axios.get(`${API_URL}/system`), 
+        axios.get(`${API_URL}/config/mode`)
       ])
 
       // Set the system info state
       setSysInfo(systemRes.data)
+      setMode(modeRes.data.mode)
 
       const latestItem = historyRes.data.data[0] 
       
@@ -75,6 +76,17 @@ function App() {
     }
   }
 
+  const toggleMode = async () => {
+    const newMode = mode === "auto" ? "manual" : "auto"
+    setMode(newMode)
+    
+    try {
+      await axios.post(`${API_URL}/config/mode`, {value: newMode})
+    } catch (e) {
+      console.error("Failed to toggle mode", e)
+    }
+  }
+
   useEffect(() => {
     fetchData()
     const interval = setInterval(fetchData, 2000)
@@ -87,17 +99,39 @@ function App() {
     return "#ef4444" 
   }
 
+  
+
   return (
     <div style={{ width: "100%", minHeight: "100vh", backgroundColor: "#1a1a1a", color: "white", padding: "2rem" }}>
       
       {/* HEADER */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2rem", borderBottom: "1px solid #333", paddingBottom: "1rem" }}>
+        
+        {/* LEFT SIDE: Title & Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <Activity size={32} color={getStatusColor()} />
           <h1 style={{ margin: 0, fontSize: "1.8rem", letterSpacing: "-1px" }}>System Monitoring <span style={{color: "#666"}}>Command Center</span></h1>
         </div>
-        {/* DYNAMIC STATUS BADGE */}
-        <div style={{ display: "flex", gap: "1rem" }}>
+        
+        {/* RIGHT SIDE: Grouped Buttons & Badges */}
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+             
+             {/* MODE TOGGLE BUTTON */}
+             <button 
+                onClick={toggleMode}
+                style={{
+                  display: "flex", alignItems: "center", gap: "8px",
+                  padding: "0.5rem 1rem", borderRadius: "8px", border: "none",
+                  cursor: "pointer", fontWeight: "bold",
+                  backgroundColor: mode === "auto" ? "#3b82f6" : "#f59e0b",
+                  color: "white"
+                }}
+             >
+                {mode === "auto" ? <ToggleLeft size={20}/> : <ToggleRight size={20}/>}
+                {mode === "auto" ? "Autopilot ON" : "Manual Mode"}
+             </button>
+
+             {/* DYNAMIC STATUS BADGE */}
              <span style={{ 
                padding: "0.5rem 1rem", 
                borderRadius: "20px", 
@@ -119,6 +153,12 @@ function App() {
                 {systemStatus === "offline" && "System Offline"}
              </span>
         </div>
+      </div>
+
+      {/* INSTRUCTIONS BAR */}
+      <div style={{ marginBottom: "2rem", padding: "10px", backgroundColor: "#2d2d2d", borderLeft: "4px solid #737373", borderRadius: "4px", color: "#a3a3a3", fontSize: "0.9rem" }}>
+        ℹ️ <b>Scaling Instructions:</b> In <b>Auto Mode</b>, the system scales based on network traffic. Switch to <b>Manual Mode</b> to command the AI. 
+        (Target: <i>client-deployment</i> on K8s / <i>web_server</i> on Docker)
       </div>
 
       {/* ERROR: API DOWN */}
@@ -164,9 +204,11 @@ function App() {
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             💾 <b>RAM:</b> <span style={{color: "#fff"}}>{sysInfo.ram_total} GB</span>
           </span>
-          {/* NEW DISK STATS */}
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             💿 <b>Storage:</b> <span style={{color: "#fff"}}>{sysInfo.disk_used} GB </span> / {sysInfo.disk_total} GB
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            🌐 <b>Interface:</b> <span style={{color: "#4ade80"}}>{sysInfo.net_interface}</span>
           </span>
         </div>
       )}

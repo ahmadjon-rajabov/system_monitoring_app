@@ -8,7 +8,7 @@ class Actuator:
         # Where app lives. Options: "docker", "kubernetes" or "safe_mode"
         self.mode = os.getenv("ORCHESTRATOR", "safe_mode").lower()
 
-        self.docker_service_name = "nginx_server"
+        self.docker_service_name = "nginx"
         self.k8s_deployment_name = "client-deployment"
         self.k8_namespace = "default"
 
@@ -73,7 +73,14 @@ class Actuator:
 
     def execute_scale(self, target_count):
         if self.mode == "docker":
-            subprocess.run(["docker", "compose", "up", "-d", "--scale", f"{self.docker_service_name}={target_count}"])
+            cmd = ["docker-compose", "-p", "system_monitoring_app", "up", "-d", "--no-recreate", "--scale", 
+                   f"{self.docker_service_name}={target_count}", self.docker_service_name]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            
+            if result.stdout:
+                print(f"Docker Output: {result.stdout}", flush=True)
+            if result.stderr:
+                print(f"Docker Error/Warning: {result.stderr}", flush=True)
         elif self.mode == "kubernetes":
             try:
                 body = {"spec": {"replicas": target_count}}

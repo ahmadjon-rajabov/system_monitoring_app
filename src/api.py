@@ -4,7 +4,7 @@ from pydantic import BaseModel  # For POST request body
 from src.database import DatabaseManager
 from src.predictor import Predictor
 from src.rag_agent import RagAgent
-import platform, psutil, os
+import platform, psutil, os, socket
 
 app = FastAPI()
 app.add_middleware(
@@ -19,17 +19,29 @@ db = DatabaseManager()
 predictor = Predictor()
 rag_agent = RagAgent()
 
-# Data shape for the chat request
+def get_primary_interface():
+    """Finds the active network interface and IP address"""
+    try:
+        # Dummy connection to figure out which interface connects to the internet
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.connect(("8.8.8.8", 80))
+        primary_ip = sock.getsockname()[0]
+        sock.close()
+
+        # Match the IP to the interface name
+        for iface_name, ifac_addrs in psutil.net_if_addrs().items():
+            for addr in ifac_addrs:
+                if addr.family == socket.AF_INET and addr.address == primary_ip:
+                    return f"{iface_name} - {primary_ip}"
+    except Exception as e:
+        print("Can't identify IP Address or Network Interface\n", e)
+
+# Data shape for the chat and config requests
 class ChatReqeust(BaseModel):
     question: str
 
-@app.post("/chat")
-def chat_ai(request: ChatReqeust):
-    """
-    Sends user question + DB context to Gemini
-    """
-    answer = rag_agent.ask(request.question)
-    return {"answer": answer}
+class ConfigReqeust(BaseModel):
+    value: str
 
 @app.get("/")
 def root():
@@ -90,5 +102,29 @@ def get_system_info():
         "ram_total": round(psutil.virtual_memory().total / (1024 ** 3), 2), # Bytes to GB
         "disk_total": round(disk_info.total / (1024 ** 3), 2),
         "disk_used": round(disk_info.used / (1024 ** 3), 2),
+        "net_interface": get_primary_interface(),
         "python_version": platform.python_version()
     }
+
+@app.post("/chat")
+def chat_ai(request: ChatReqeust):
+    """
+    Sends user question + DB context to Gemini
+    """
+    answer = rag_agent.ask(request.question)
+    return {"answer": answer}
+
+@app.get("/config/mode")
+def get_mode():
+    """Get current scaling mode auto/manual"""
+    mode = db.get_config("scaling_mode")
+    return {"mode": mode or "auto"}
+
+@app.post("/config/mode")
+def set_mode(req: ConfigReqeust):
+    """Set scaling mode"""
+    if req.value not in ["auto", "manual"]:
+        return {"error": "Invalid mode, Use 'auto' or 'manual'"}
+    
+    db.set_config("scaling_mode", req.value)
+    return {"status": "updated", "mode": req.value}

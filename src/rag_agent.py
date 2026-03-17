@@ -100,10 +100,15 @@ class RagAgent:
         for row in recent_data:
             logs_context += f"- Time: {row['timestamp']}, CPU: {row['cpu']}%, Network: {row['network']} MB/s\n"
         
+        current_mode = self.db.get_config("scaling_mode") or "auto"
+
         # Augmentation
         prompt = f"""
         You are 'System Monitoring', an expert Site Reliability Engineer (SRE)/DevOps AI assistant running on {platform.node()}.
         Analyze the system metrics below to answer the user's question.
+        
+        [CURRENT OPERATING MODE]
+        {current_mode}
 
         [SYSTEM CONTEXT]
         {self.system_architecture}
@@ -123,6 +128,8 @@ class RagAgent:
         - You have permission to control the infrastructure. 
             - If the user explicitly asks to "Scale Up" or "Add Server", output EXACTLY: [ACTION: SCALE_UP]
             - If the user explicitly asks to "Scale Down" or "Remove Server", output EXACTLY: [ACTION: SCALE_DOWN]
+            - If user asks to Scale Up/Down AND moode is 'auto': REFUSE the command. Tell them: "I cannot execute commands in Auto Mode. Please switch to Manual Mode
+            - IF user asks to Scale Up/Down AND mode is 'manual': Output: [ACTION: SCALE_UP] or [ACTION: SCALE_DOWN]
         - Be concise and professional. No fluff. Structure the answer like a status report
         """
 

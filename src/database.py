@@ -9,8 +9,9 @@ class DatabaseManager:
         self.name = os.getenv("POSTGRES_DB")
         self.user = os.getenv("POSTGRES_USER")
         self.password = os.getenv("POSTGRES_PASSWORD")
-        self.connection = None
-        self._initialize_tables()
+
+        self.tables_ready = False
+        self.initialize_tables()
     
     def get_connection(self):
         """        
@@ -26,35 +27,78 @@ class DatabaseManager:
         except Exception as e:
             print(f"DB Connection Error: {e}")
             return None
+        
+    def get_config(self, key):
+        self.ensure_table()
+        connection = self.get_connection()
+        val = None
+        if connection:
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT value FROM system_config WHERE key = %s", (key,))
+                    row = cursor.fetchone()
+                    if row: val = row[0]    # string 'auto' from the tuple 
+            finally:
+                connection.close()
+        return val
     
-    def _initialize_tables(self):
+    def set_config(self, key, value):
+        self.ensure_table()
+        connection = self.get_connection()
+        if connection:
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        INSERT INTO system_config (key, value) VALUES (%s, %s)
+                        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+                    """, (key, value))
+                    connection.commit()
+            finally:
+                connection.close()
+
+    def initialize_tables(self):
         """
         Private method: Set up the table if missing
         """
         connection = self.get_connection()
         if connection:
-            with connection.cursor() as cursor:
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS system_metrics(
-                        id SERIAL PRIMARY KEY,
-                        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        cpu_usage REAL,
-                        memory_usage REAL,
-                        disk_usage REAL,
-                        network_mbps REAL
-                    );
-                """)
-                connection.commit()
-                try:
-                    cursor.execute("ALTER TABLE system_metrics ADD COLUMN network_mbps REAL;")
-                except:
-                    connection.rollback() # Column already exists
-                
-                connection.commit()
-            connection.close()
-            print("!!! Database Schema Ready !!!")
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS system_metrics(
+                            id SERIAL PRIMARY KEY,
+                            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            cpu_usage REAL,
+                            memory_usage REAL,
+                            disk_usage REAL,
+                            network_mbps REAL
+                        );
+                    """)
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS system_config (
+                            key TEXT PRIMARY KEY,
+                            value TEXT           
+                        );
+                    """)
+                    cursor.execute("""
+                        INSERT INTO system_config (key, value)
+                        VALUES ('scaling_mode', 'auto')
+                        ON CONFLICT (key) DO NOTHING;
+                    """)
+                    connection.commit()
+                    # print("!!! Database Schema Ready !!!")
+            except Exception as e:
+                print(f"Table init failed: {e}")
+            finally:
+                connection.close()
+    
+    def ensure_table(self):
+        """IF tables aren't ready, try to create them"""
+        if not self.tables_ready:
+            self.initialize_tables()
     
     def save_metric(self, cpu, memory, disk, network):
+        self.ensure_table()
         connection = self.get_connection()
         if connection:
             try:
@@ -66,6 +110,9 @@ class DatabaseManager:
                     )
                     connection.commit()
             except Exception as e:
+                if "releation" in str(e) and "does not exists" in str(e):
+                    print("Tables missing. Resetting flag")
+                    self.tables_ready = False
                 print(F"Save to DB Failed: {e}")
             finally:
                 connection.close()
@@ -74,6 +121,7 @@ class DatabaseManager:
         """
         Retreives the last 'limit' entries from the DB
         """
+        self.ensure_table()
         connection = self.get_connection()
         clean_data = []
 
@@ -108,6 +156,7 @@ class DatabaseManager:
         """
         Calculatees Highs, Lows, and Averages for the last 24 hours
         """
+        self.ensure_table()
         connection = self.get_connection()
         summary = {}
 

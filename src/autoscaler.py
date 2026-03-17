@@ -14,6 +14,11 @@ class AutoScaler:
         self.COOLDOWN_SECONDS = 30  # Wait for 30s between actions
         
     def decide(self):
+        mode = self.db.get_config("scaling_mode")
+        if mode == "manual":
+            print(" System in MANUAL mode. Autoscaler paused!")
+            return
+
         metrics = self.db.get_recent_metrics(limit=1)
         if not metrics:
             print("Can't decide No metrics")
