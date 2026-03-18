@@ -1,0 +1,56 @@
+- name: System Monitoring App Infrastructure Setup
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+
+  tasks:
+    # Linux OS
+    - name: Install Dependencies (Git, Python, Docker)
+      when: ansible_facts['os_family'] == "Debian"
+      become: true
+      apt:
+        name: 
+          - git
+          - python3
+          - python3-pip
+          - docker.io
+          - docker-compose-v2
+        state: present
+        update_cache: yes
+    - name: Ensure Docker service is running
+      when: ansible_facts['os_family'] == "Debian"
+      become: true
+      service:
+        name: docker
+        state: started
+        enabled: yes
+    # MacOS 
+    - name: Install Docker Desktop
+      when: ansible_facts['os_family'] == "Darwin"
+      homebrew_cask:
+        name: docker
+        state: present
+        accept_external_apps: yes
+    # Deploy
+    - name: Ensure the App Directory exists
+      file:
+        path: "{{ ansible_facts['env']['HOME'] }}/system-monitoring-deployment"
+        state: directory
+    - name: Clone the repo
+      git:
+        repo: 'https://github.com/ahmadjon-rajabov/system_monitoring_app.git'
+        dest: "{{ ansible_env.HOME }}/system-monitoring-deployment"
+        version: main
+        force: yes
+    - name: Provide .env Template Instructions
+      debug:
+        msg: "IMPORTANT: Please ensure to create a .env file with GEMINI_API_KEY in {{ ansible_env.HOME }}/system-monitoring-deployment before launching"
+    - name: Launch Docker sandbox
+      shell: |
+        cd {{ ansible_facts['env']['HOME'] }}/system-monitoring-deployment
+        docker compose up -d --build
+      ignore_errors: yes  # in case Docker is still booting up
+      register: docker_output
+    - name: Show Launch Status
+      debug:
+        msg: "Deployment Command Executed! Log: {{ docker_output.stdout }}"
