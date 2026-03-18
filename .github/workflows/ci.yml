@@ -27,7 +27,7 @@ jobs:
         id: repo_name
         run: echo "REPO=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
       - name: Buidl and Push Backend
-        uses: docker/build-push-actions@v5
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile.backend
