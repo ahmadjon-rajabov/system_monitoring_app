@@ -18,6 +18,7 @@ services:
     env_file: .env
     environment: 
       - POSTGRES_HOST=db
+      - CHROMA_HOST=chromadb
     volumes: 
       - /var/run/docker.sock:/var/run/docker.sock
       - ./docker-compose.yml:/app/docker-compose.yml
@@ -69,5 +70,14 @@ services:
     depends_on:
       - db
 
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: system_monitoring_chromadb
+    ports:
+      - "8001:8000" # 8001 so it doesn't conflict with FastAPI on 8000
+    volumes:
+      - chroma_data_vol:/chroma/chroma
+
 volumes:
-  postgres_data_vol:
+  postgres_data_vol: {}
+  chroma_data_vol: {} 

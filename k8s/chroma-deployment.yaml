@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chroma-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: chromadb
+  template:
+    metadata:
+      labels:
+        component: chromadb
+    spec:
+      containers:
+        - name: chromadb
+          image: chromadb/chroma:latest
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: chroma-storage
+              mountPath: /chroma/chroma
+      volumes:
+        - name: chroma-storage
+          persistentVolumeClaim:
+            claimName: chroma-pvc

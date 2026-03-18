@@ -27,3 +27,5 @@ spec:
               value: "postgres-service" 
             - name: ORCHESTRATOR
               value: "kubernetes"
+            - name: CHROMA_HOST
+              value: "chroma-service"

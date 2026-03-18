@@ -1,4 +1,4 @@
-import os, platform, psutil
+import os, platform, psutil, chromadb
 import google.generativeai as genai
 from dotenv import load_dotenv
 from src.database import DatabaseManager
@@ -22,6 +22,15 @@ class RagAgent:
                 print(f"Error configuring Gemini: {e}")
                 self.model = None
         
+        self.chroma_host = os.getenv("CHROMA_HOST", "localhost")
+        self.collection = None
+        try:
+            self.chroma_client = chromadb.HttpClient(host=self.chroma_host, port=8000)
+            self.collection = self.chroma_client.get_or_create_collection(name="devops_runbook")
+            self.seed_knowledge()
+        except Exception as e:
+            print(f"ChromaDB not reachable at {self.chroma_host}: {e}")
+
         self.system_architecture = """
         [SYSTEM ARCHITECTURE]
         - Project Name: System Monitor
@@ -43,6 +52,17 @@ class RagAgent:
         if not self.model:
             return "Error: Gemini API missing (Check .env file)"
         
+        rag_context = "No specific runbook documentation found"
+        if self.collection:
+            try:
+                # find 2 most relevant documents 
+                results = self.collection.query(query_texts=[user_question], n_results=2)
+                if results['documents'] and results['documents'][0]:
+                    rag_context = "\n".join(results['documents'][0])
+                    print(f"CHROMA FOUND THIS CONTEXT: {rag_context}", flush=True)
+            except Exception as e:
+                print(f"Chroma Query Error: {e}")
+
         try:
             active_containers = self.actuator.get_container_count()
         except:
@@ -112,6 +132,10 @@ class RagAgent:
 
         [SYSTEM CONTEXT]
         {self.system_architecture}
+        
+        [VECTOR KNOWLEDGE BASE (RUNBOOK)]
+        {rag_context}
+
         {hardware_info}
         {infra_info}
         {history_context}
@@ -124,6 +148,7 @@ class RagAgent:
         - Use the HARDWARE SPECS to answer questions about disk/RAM size.
         - Use the 24H SUMMARY to answer questions about "yesterday" or "general health".
         - Use CURRENT LIVE METRICS to answer "now".
+        - If the user asks a technical or troubleshooting question, heavily prioritize the [VECTOR KNOWLEDGE BASE] to answer it.
         - If the user asks about something older than 24 hours, apologize and say you only track 24 hours.
         - You have permission to control the infrastructure. 
             - If the user explicitly asks to "Scale Up" or "Add Server", output EXACTLY: [ACTION: SCALE_UP]
@@ -147,6 +172,20 @@ class RagAgent:
             return reply
         except Exception as e:
             return f"AI Generation Error: {str(e)}"
+
+def seed_knowledge(self):
+    """Injecfts technical manuals into the Vector Database"""
+    docs = [
+        "If a Kubernetes Pod is stuck in 'CrashLoopBackOff', it means the application inside the container is repeatedly crashing. To fix it, check the logs using: kubectl logs deploy/<deployment-name> --previous",
+        "If a Kubernetes Pod is stuck in 'ErrImageNeverPull', it means the imagePullPolicy is set to 'Never' but the node does not have the image locally. To fix it, import the image using 'k3d image import' or change the policy to 'IfNotPresent'.",
+        "A '502 Bad Gateway' error from the Kubernetes LoadBalancer usually means the worker node is frozen or the backend service is misconfigured in the Ingress.",
+        "System Monitor Auto-Scaler logic: High Network Traffic is usually above 2 MB/s. Low traffic is below 100 KB/s."
+    ]
+
+    # ChromaDB needs a unique ID for every document
+    ids = [f"runbook_rule_{i}" for i in range(len(docs))]   # 'upsert' safely inserts or updates 
+    self.collection.upsert(documents=docs, ids=ids)
+    print("ChromaDB Knowledge Base Seeded!")
 
 if __name__ == "__main__":
     agent = RagAgent()
