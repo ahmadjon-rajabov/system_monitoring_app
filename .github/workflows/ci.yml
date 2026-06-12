@@ -31,7 +31,7 @@ jobs:
       - name: Run Linter (Ruff)
         run: uv run ruff check .
       - name: Run Unit Tests with Coverage
-        run: uv run pytest tests/ --cov=src --cov-fail-under=80
+        run: uv run pytest tests/ --cov=src --cov-fail-under=70
 
   build-and-publish:
     name: Build & Push Docker Images

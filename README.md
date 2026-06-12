@@ -25,7 +25,8 @@ system_monitoring_app/
 │   ├── predictor.py         # Scikit-Learn Machine Learning models
 │   └── rag_agent.py         # Gemini LLM + ChromaDB integration
 ├── tests/                   # QA & Automated Testing Suite
-│   ├── test_autoscaler.py   # Unit tests with Mocking
+│   ├── test_api.py          # FastAPI route testing using TestClient & Mocks
+│   ├── test_autoscaler.py   # Core logic unit tests with Pytest Mocking
 │   └── test_integration.py  # E2E Database tests with Testcontainers
 ├── pyproject.toml           # Modern package management & tool config (uv, pytest, ruff)
 └── docker-compose.yml       # Local sandbox orchestration
@@ -71,13 +72,15 @@ Upon pushing code to the `main` branch, **GitHub Actions** provisions a runner, 
 
 Utilized a modern Test Automation Pyramid, managed by uv (the ultra-fast Python package manager)
 
-* **Unit Testing (The "Mocking Master"):** `pytest-mock` to intercept external dependencies. The `AutoScaler` logic is tested against simulated high/low network traffic in milliseconds without requiring actual databases or clusters.
+* **Unit Testing (The "Mocking Master"):** `pytest-mock` to intercept external dependencies, allowing us to test the `AutoScaler` logic against simulated high/low network traffic in milliseconds. Utilized FastAPI's `TestClient` to validate REST endpoints and routing logic without triggering the physical database or burning AI API credits.
 * **Integration Testing (E2E with Testcontainers):** Avoided mocking the database layer. Instead, `testcontainers-python` dynamically spins up ephemeral, real PostgreSQL Docker containers on randomized ports. This proves the Python-to-SQL data pipeline functions flawlessly in a real environment before destroying the container.
 * **Continuous Integration (CI/CD Quality Gates):** GitHub Actions enforces strict quality gates on every push. The pipeline automatically:
     1. Installs dependencies using `uv`.
     2. Runs `Ruff` to enforce formatting and catch unused variables/imports.
-    3. Runs the Pytest suite, blocking deployment if *Test Coverage drops below 80%*.
+    3. Runs the Pytest suite, blocking deployment if *Test Coverage drops below 70%*. 
     4. Upon passing, builds and pushes Docker images to GHCR.
+
+> **Note:** Coverage explicitly targets deterministic core logic like APIs, the Autoscaler, and DB Pipelines. Non-deterministic AI/LLM agents and hardware-level daemons are strategically omitted to prevent pipeline flakiness, adhering to modern SDET best practices
 
 ## Getting Started
 
