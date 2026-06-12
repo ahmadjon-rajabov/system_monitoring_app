@@ -9,8 +9,9 @@ RUN curl -SL "https://github.com/docker/compose/releases/download/v2.24.6/docker
     chmod +x /usr/local/bin/docker-compose
 RUN rm -rf /var/lib/apt/lists/*     # rm part to keep image slim
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY pyproject.toml uv.lock* ./
+RUN uv pip install --system -r pyproject.toml
 COPY . .
 
 CMD ["uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8000"]
