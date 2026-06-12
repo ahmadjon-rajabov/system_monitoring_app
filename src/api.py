@@ -4,7 +4,10 @@ from pydantic import BaseModel  # For POST request body
 from src.database import DatabaseManager
 from src.predictor import Predictor
 from src.rag_agent import RagAgent
-import platform, psutil, os, socket
+import platform
+import psutil
+import os
+import socket
 
 app = FastAPI()
 app.add_middleware(
@@ -90,7 +93,7 @@ def get_system_info():
 
     try:
         disk_info = psutil.disk_usage(disk_path)
-    except Exception as e:
+    except Exception:
         print(f"Disk check failed for {disk_path}, falling back to current directory")
         disk_info = psutil.disk_usage('.')
 

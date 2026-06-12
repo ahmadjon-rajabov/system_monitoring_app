@@ -26,7 +26,7 @@ class Actuator:
             self.client = docker.from_env()
             self.client.ping()  
             return "Connected to standard Docker socket!"
-        except Exception as e:
+        except Exception:
             pass
 
         if not self.client:
@@ -46,7 +46,7 @@ class Actuator:
             config.load_incluster_config() # loads secure token injected automatically by k8s into the pod
             self.k8s_apps_api = client.AppsV1Api()
             print("Conntected to Kubernetes Control Plane!")
-        except:
+        except Exception:
             try:
                 config.load_kube_config()
                 print("Loaded local Kubernetes config.")
@@ -60,7 +60,10 @@ class Actuator:
         Returns a dummy value if in k8s mode
         """
         if self.mode == "docker" and self.client:
-            return sum(1 for container in self.client.containers.list() if self.docker_service_name in container.name)
+            return sum(
+                1 for container in self.client.containers.list() 
+                if container.name and self.docker_service_name in container.name
+            )
         elif self.mode == "kubernetes":
             try:
                 # Read client-deployment file and tell me the replicas count

@@ -6,6 +6,7 @@ class DatabaseManager:
     def __init__(self):
         load_dotenv()
         self.host = os.getenv("POSTGRES_HOST", "localhost")
+        self.port = os.getenv("POSTGRES_PORT", "5432")
         self.name = os.getenv("POSTGRES_DB")
         self.user = os.getenv("POSTGRES_USER")
         self.password = os.getenv("POSTGRES_PASSWORD")
@@ -20,6 +21,7 @@ class DatabaseManager:
         try:
             return psycopg2.connect(
                 host = self.host,
+                port = self.port,
                 database = self.name,
                 user = self.user,
                 password = self.password
@@ -37,7 +39,8 @@ class DatabaseManager:
                 with connection.cursor() as cursor:
                     cursor.execute("SELECT value FROM system_config WHERE key = %s", (key,))
                     row = cursor.fetchone()
-                    if row: val = row[0]    # string 'auto' from the tuple 
+                    if row: 
+                        val = row[0]    # string 'auto' from the tuple 
             finally:
                 connection.close()
         return val

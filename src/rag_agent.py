@@ -1,4 +1,7 @@
-import os, platform, psutil, chromadb
+import os
+import platform
+import psutil
+import chromadb
 import google.generativeai as genai
 from dotenv import load_dotenv
 from src.database import DatabaseManager
@@ -65,7 +68,7 @@ class RagAgent:
 
         try:
             active_containers = self.actuator.get_container_count()
-        except:
+        except Exception:
             active_containers = "Can't identify number of Nginx container. Docker Error"
         
         
@@ -80,7 +83,7 @@ class RagAgent:
         
         try:
             disk_info = psutil.disk_usage(disk_path)
-        except Exception as e:
+        except Exception:
             print(f"Disk check failed for {disk_path}, falling back to current directory")
             disk_info = psutil.disk_usage('.')
         

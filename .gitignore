@@ -6,3 +6,4 @@ __pycache__/
 ._*
 .DS_Store
 k8s/secrets.yaml
+.ruff_Cache

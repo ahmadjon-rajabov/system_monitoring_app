@@ -1,5 +1,5 @@
 import psutil
-import time, os
+import time
 from src.database import DatabaseManager
 
 class SystemMonitor:

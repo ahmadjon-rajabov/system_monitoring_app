@@ -11,8 +11,31 @@ permissions:  # Robot
   packages: write   # To upload Docker images to GitHub account
 
 jobs:
+  test-and-lint:
+    name: Run Tests and Linters
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Reporistory
+        uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+      - name: Install dependencies
+        run: uv sync
+      - name: Run Linter (Ruff)
+        run: uv run ruff check .
+      - name: Run Unit Tests with Coverage
+        run: uv run pytest tests/ --cov=src --cov-fail-under=80
+
   build-and-publish:
     name: Build & Push Docker Images
+    needs: test-and-lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
