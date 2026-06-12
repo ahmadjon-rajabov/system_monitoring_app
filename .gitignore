@@ -7,3 +7,4 @@ __pycache__/
 .DS_Store
 k8s/secrets.yaml
 .ruff_Cache
+.pytest_cache
